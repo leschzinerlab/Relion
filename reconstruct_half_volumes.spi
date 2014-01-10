@@ -1,0 +1,62 @@
+;;;;;;
+
+FR
+?Input particle stack? [stack]
+
+FR
+?Input file containing angles and shifts? [param]
+
+FR
+?Input select file for particle stack? [select]
+
+RR [pix]
+?Pixel size? 
+
+;;;;;;;
+
+MD
+SET MP
+(4)
+
+UD N [tot]
+[param]
+
+do lb1 [part]=1,[tot]
+
+	UD IC [part] [sel]
+	[select]
+
+	UD IC [part] [psi] [theta] [phi] [sx] [sy]
+	[param]
+
+	SH F
+	[stack]@{******[sel]}
+	[stack]_shifted@{*******[part]}
+	([sx],[sy])
+
+lb1
+
+UD ICE
+[select]
+
+UD ICE
+[param]
+
+BP 32F
+[stack]_shifted@******
+1-[tot]
+[param]
+*
+[stack]_3D
+[stack]_3D_odd
+[stack]_3D_eve
+
+FSC 
+[stack]_3D_odd
+[stack]_3D_eve
+0.5
+[pix]
+[param]_FSC
+[param]_resolutionFile
+
+en d
