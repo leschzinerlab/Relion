@@ -12,13 +12,11 @@ from os import system
 #=========================
 def setupParserOptions():
         parser = optparse.OptionParser()
-        parser.set_usage("%prog -i [file].star --class=[classNum] --reset")
+        parser.set_usage("%prog -i [file].star --class=[classNum]")
  	parser.add_option("-i",dest="star",type="string",metavar="FILE",
                 help="Data file (.star) from RELION 3D classification")
         parser.add_option("--class",dest="classNumber",type="int", metavar="INT",
                 help="Class number of particle data that you would like extracted")
-       	parser.add_option("--reset", action="store_true",dest="reset",default=False,
-                help="Reset euler angles, shifts, and score to 0 if flagged") 
 	parser.add_option("-d", action="store_true",dest="debug",default=False,
                 help="debug")
 	options,args = parser.parse_args()
@@ -49,17 +47,26 @@ def selectParts(params):
 	starfile = open(params['star'],'r')
 	outfile = open('%s_class%02d.star' %(params['star'][:-5],params['classNumber']),'w')
 
+	#File in header info
+	outfile.write('\n')
+	outfile.write('data_images\n')     
+	outfile.write('\n')
+	outfile.write('loop_\n')     
+ 	outfile.write('_rlnImageName\n')     
+	outfile.write('_rlnClassNumber\n')         
+ 	outfile.write('_rlnMagnificationCorrection\n')     
+ 	outfile.write('_rlnLogLikeliContribution\n')     
+ 	outfile.write('_rlnMaxValueProbDistribution\n')     
+ 	outfile.write('_rlnNrOfSignificantSamples\n') 
+
 	for line in starfile:
 		lineparse = line.split()
 		if len(lineparse) < 3:
-                        continue
+			continue
 		if params['debug'] is True:
 			print lineparse[6]
 		if float(lineparse[6]) == params['classNumber']:
-			if params['reset'] is False:
-				outfile.write('%s\n' %(line))
-			if params['reset'] is True:
-				outfile.write('%s\t0\t0\t0\t0\t0\t%s\t0\t%s\t%s\t%s\t%s\n'%(lineparse[0],lineparse[6],lineparse[8],lineparse[9],lineparse[10],lineparse[11]))	
+			outfile.write('%s\t%s\t%s\t%s\t%s\t%s\n'%(lineparse[0],lineparse[6],lineparse[8],lineparse[9],lineparse[10],lineparse[11]))	
 
 #==============================
 if __name__ == "__main__":
