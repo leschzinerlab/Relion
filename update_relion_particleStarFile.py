@@ -25,6 +25,10 @@ def setupParserOptions():
                 help="New magnification")
 	parser.add_option("--pix",dest="apix",type="float",metavar="FLOAT",
 		help="New detector pixel size")
+	parser.add_option("--removeParticleName",dest="removeParticleName",type="string",metavar="PATH",
+		help="Name of particle that needs to be replaced")
+	parser.add_option("--replaceParticleNameWith",dest="replaceParticleNameWith",type="string",metavar="PATH",
+		help="Name that will be replaced")
 	parser.add_option("--moreHelp", action="store_true",dest="morehelp",default=False,
                 help="Flag for more running information")
 	parser.add_option("-d", action="store_true",dest="debug",default=False,
@@ -136,6 +140,40 @@ def updateApix(params):
 	if os.path.exists('tmpFile.txt'):
                 os.remove('tmpFile.txt')
 	
+#=============================
+def updateParticleName(params):
+
+	f1 = open(params['star'],'r')
+
+        if os.path.exists(params['output']):
+                print "\nOutput file %s already exists, updating information.\n" %(params['output'])
+                shutil.move(params['output'],'tmpFile.txt')
+                f1 = open('tmpFile.txt','r')
+
+        outfile = open(params['output'],'w')
+
+        for line in f1:
+
+                if len(line) > 40:
+
+                        l = line.split()
+
+			#Need to change 4 & 14
+			#print l[3]
+			#print l[13]
+			
+			particle = l[13].replace(params['removeParticleName'],params['replaceParticleNameWith'])
+			
+			movie = l[3].replace(params['removeParticleName'],params['replaceParticleNameWith'])
+
+			l[3]=str(movie)
+			l[13]=str(particle)
+	
+                        line = "   ".join(l)
+                        line = line+"\n"
+                outfile.write(line)
+        f1.close()
+
 #==============================
 if __name__ == "__main__":
 
@@ -176,3 +214,9 @@ if __name__ == "__main__":
 
 	if params['apix']:
 		updateApix(params)
+
+	if params['removeParticleName']:
+
+		if params['replaceParticleNameWith']:
+
+			updateParticleName(params)
