@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-import pylab as P
+import matplotlib as plt
 import optparse
 from sys import *
 import os,sys,re
@@ -15,6 +15,8 @@ def setupParserOptions():
                 help="Relion star file (data.star)")
         parser.add_option("--rlnEuler",dest="rlnEuler",type="string",metavar="STRING",
                 help="Name of Relion euler angle designation: AngleRot,AngleTilt, AnglePsi")
+        parser.add_option("--binsize",dest="bin",type="int",metavar="INT",default=5
+                help="Optional: bin size for histogram of euler angles (Default=5)")
         parser.add_option("-d", action="store_true",dest="debug",default=False,
                 help="debug")
         options,args = parser.parse_args()
@@ -88,7 +90,12 @@ def plotEuler(star,colnum,debug):
     o1.close()
     f1.close()
 
+    eulers=np.genfromtxt(star,colnum)
 
+    #Create bins:
+    bins=np.arange(1,360,params['bin'])
+
+    
 #==============================
 if __name__ == "__main__":
 
