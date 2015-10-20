@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import optparse
 from sys import *
 import os,sys,re
@@ -15,7 +15,7 @@ def setupParserOptions():
                 help="Relion star file (data.star)")
         parser.add_option("--rlnEuler",dest="rlnEuler",type="string",metavar="STRING",
                 help="Name of Relion euler angle designation: AngleRot,AngleTilt, AnglePsi")
-        parser.add_option("--binsize",dest="bin",type="int",metavar="INT",default=5
+        parser.add_option("--binsize",dest="bin",type="int",metavar="INT",default=5,
                 help="Optional: bin size for histogram of euler angles (Default=5)")
         parser.add_option("-d", action="store_true",dest="debug",default=False,
                 help="debug")
@@ -69,7 +69,7 @@ def getRelionColumnIndex(star,rlnvariable):
         i=i+1
 
 #===============================
-def plotEuler(star,colnum,debug):
+def plotEuler(star,colnum,debug,rln):
 
     #open star file
     f1=open(star,'r')
@@ -79,7 +79,7 @@ def plotEuler(star,colnum,debug):
     if os.path.exists(tmp):
         os.remove(tmp)
 
-    #open for writing
+    #open for writing into new tmp file without header
     o1=open(tmp,'w')
 
     for line in f1:
@@ -90,12 +90,28 @@ def plotEuler(star,colnum,debug):
     o1.close()
     f1.close()
 
-    eulers=np.genfromtxt(star,colnum)
+    usecolumn=int(colnum-1)
+
+    eulers=np.loadtxt(tmp,usecols=[usecolumn])
+
+    #Get number of particles
+    tot=len(open(tmp,'r').readlines())
 
     #Create bins:
-    bins=np.arange(1,360,params['bin'])
+    if rln == 'AngleTilt':
+        bins=np.arange(0,180,params['bin'])
+        random_thresh=tot/(180/params['bin'])
+        
+    if rln == 'AngleRot':
+        bins=np.arange(-180,180,params['bin'])
+        random_thresh=tot/(360/params['bin'])
 
-    
+    #Plot histogram
+    plt.hist(eulers,bins=bins)
+    plt.title("%s euler angle histogram\n (Random distribution = %s per bin)" %(rln,str(random_thresh)))
+    plt.xlabel("%s" %(rln))
+    plt.ylabel("Number of particles")
+    plt.show()
 #==============================
 if __name__ == "__main__":
 
@@ -104,7 +120,7 @@ if __name__ == "__main__":
         #Check that file exists & relion euler designation is real
         rln=checkConflicts(params)
         if rln == 'empty':
-            print 'Error: Unrecognized Relion euler angle designation %s' %(params['rlnEuler'])
+            print 'Error: Unrecognized Relion euler angle designation %s. Must be AngleRot, AngleTilt, AnglePsi' %(params['rlnEuler'])
             sys.exit()
 
         #Get column number for euler designation
@@ -114,4 +130,4 @@ if __name__ == "__main__":
             print 'rln variable=%s' %(rln)
             print 'index number=%s' %(columnindex)
 
-        plotEuler(params['star'],int(columnindex),params['debug'])
+        plotEuler(params['star'],int(columnindex),params['debug'],params['rlnEuler'])
