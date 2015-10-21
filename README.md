@@ -5,6 +5,9 @@
 
 ##Plotting euler angle distributions for 3D reconstructions
 
+Given an output *.star* file from Relion, you can visualize the euler angles by opening the .bild file with UCSF Chimera.
+
+Alternatively, if you would like to generate 1D histogram plots for any euler angle, or a 2D heat-map of two specific euler angles, you can use *plot_indivEuler_histogram_fromStarFile.py*:
 ```
 $ Relion/plot_indivEuler_histogram_fromStarFile.py
 Usage: plot_indivEuler_histogram_fromStarFile.py --starfile=<relion_star_file>
@@ -20,3 +23,5 @@ Options:
                      (Default=5)
   -d                 debug
 ```
+
+This script uses numpy and matplotlib to generate 1D/2D histograms for the specified euler angle (AngleRot, AngleTilt, AnglePsi) that is within the Relion .star file.
