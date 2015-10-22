@@ -15,7 +15,7 @@ def setupParserOptions():
         parser.add_option("--starparticle",dest="starparticle",type="string",metavar="FILE",
                 help="Relion star file that will be reweighted based upon euler angles.")
         parser.add_option("--remove",dest="remove",type="int",metavar="INT",
-                help="Number of particles to remove from preferential view")
+                help="Number of particles to remove from preferential view, specified WITHIN the limits below")
         parser.add_option("--AngleRotLim1",dest="rotlim1",type="int",metavar="INT",default=-180,
                 help="Lower limit for AngleRot. (Default=-180)")
         parser.add_option("--AngleRotLim2",dest="rotlim2",type="int",metavar="INT",default=180,
@@ -81,6 +81,19 @@ def getRelionColumnIndex(star,rlnvariable):
         i=i+1
 
 #==============================
+def getNumberofLinesRelionHeader(star):
+
+    f1=open(star,'r')
+    tot=0
+
+    for line in f1:
+        if len(line) < 50:
+            tot=tot+1
+    f1.close()
+
+    return tot
+
+#==============================
 def getNumberParticlesRelion(star):
 
     f1=open(star,'r')
@@ -89,6 +102,8 @@ def getNumberParticlesRelion(star):
     for line in f1:
         if len(line) > 50:
             tot=tot+1
+
+    f1.close()
 
     return tot
 
@@ -110,22 +125,7 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             print 'Could not find _rlnAnglePsi in header of %s. Exiting' %(euler)
             sys.exit()
 
-        #Open output file
-        o1=open('%s_reweight.star' %(params['starparticle'][:-5]),'w')
-
-        #Read relion header from original file (particle) and then write into new file
-        f1=open(particle,'r')
-
-        #Counter for number of header lines
-        headercount=0
-
-        for line in f1:
-            if len(line)<50:
-                headercount=headercount+1
-                o1.write(line)
-        f1.close()
-
-        #Find number of particles that need to be removed
+        #Find number of particles that need to be removed & write into temp file
         #Create temporary file
         tmp='tmpfile122.txt'
         if os.path.exists(tmp):
@@ -134,6 +134,7 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         out=open(tmp,'w')
 
         counter=1
+        particlecounter=1
 
         while counter <= tot:
             line=linecache.getline(euler,counter)
@@ -149,17 +150,39 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             psi=float(l[int(colpsi)-1])
 
             flag=0
-            if rot<rotlim1 or rot>rotlim2:
-                flag=1
-            if tilt<tiltlim1 or tilt>tiltlim2:
-                flag=1
-            if psi<psilim1 or psi>psilim2:
-                flag=1
-            if flag == 1:
-                out.write('%i\n'%(counter))
-            counter=counter+1
+            if debug is True:
+                print rot
+                print tilt
+                print psi
 
-        #Randomly select from this particle list a set number to be included
+            if rotlim1 > -180:
+                if rotlim2 < 180:
+                    if rot>rotlim1 and rot<rotlim2:
+                        flag=1
+                        if debug is True:
+                            print 'flagged b/c of rot'
+
+            if tiltlim1 >0:
+                if tiltlim2<180:
+                    if tilt>tiltlim1 and tilt<tiltlim2:
+                        flag=1
+                        if debug is True:
+                            print 'flagged b/c of tilt'
+
+            if psilim1 > -180:
+                if psilim2 < 180:
+                    if psi>psilim1 and ps<psilim2:
+                        flag=1
+                        if debug is True:
+                            print 'flagged b/c of psi'
+            if flag == 1:
+                out.write('%i\n'%(particlecounter))
+            counter=counter+1
+            particlecounter=particlecounter+1
+
+        out.close()
+
+        #Randomly select from this list of particles a set number to be removed
         if os.path.exists('%s_222.txt' %(tmp[:-4])):
             os.remove('%s_222.txt' %(tmp[:-4]))
         out2=open('%s_222.txt' %(tmp[:-4]),'w')
@@ -168,9 +191,55 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             line=get_random_line(tmp)
             out2.write(line)
             counter=counter+1
+        out2.close()
+
+        #Write header lines from edited file into new file header
+        particleopen=open(particle,'r')
+        particlewrite=open('%s_reweight.star' %(particle[:-5]),'w')
+        counter=1
+        counter=1
+        for line in particleopen:
+            if counter<80:
+                if len(line)<50:
+                    particlewrite.write(line)
+            counter=counter+1
+
+        #Get number of lines in header for edited file
+        header_particle=getNumberofLinesRelionHeader(particle)
 
         #Go through each line, decide if it should/shouldn't be included and write into new file
+        euler_open=open(euler,'r')
+        counter=1
 
+        for line in euler_open:
+
+            if len(line) < 50:
+                continue
+
+            #Debug print
+            if debug is True:
+                print 'Working on particle %i in euler file' %(counter)
+                print 'Euler line: %s' %(line)
+
+            #Check if this particle is to be removed
+            remove_flag=checkInList('tmpfile122_222.txt',counter)
+
+            #Determine corresponding line number in edited file for this particle
+            particle_num=counter+header_particle
+
+            #Get line from file
+            particle_line=linecache.getline(particle,particle_num)
+
+            if debug is True:
+                print 'Particle %i is on line %i in %s' %(counter,particle_num,particle)
+                print 'Particle line: %s' %(particle_line)
+
+            if remove_flag == 0:
+                particlewrite.write(particle_line)
+                if debug is True:
+                    'Writing particle %i to new file' %(counter)
+
+            counter=counter+1
 #============================
 def get_random_line(file_name):
     total_bytes = os.stat(file_name).st_size
@@ -181,6 +250,22 @@ def get_random_line(file_name):
     return file.readline()
 
 #==============================
+def checkInList(badlist,checknum):
+
+    readingfile=open(badlist,'r')
+
+    flag=0
+
+    for line in readingfile:
+        #print float(line.split()[0])
+        #print float(checknum)
+        if float(line.split()[0]) == float(checknum):
+            flag=1
+
+    readingfile.close()
+    return flag
+
+#==============================
 if __name__ == "__main__":
 
         #Get input options
@@ -189,13 +274,27 @@ if __name__ == "__main__":
         #Check that files exists
         checkConflicts(params)
 
-        #Number of particles
+        #Number of particles of euler file
         tot=getNumberParticlesRelion(params['stareuler'])
 
+        #Number of particles in file that will be edited (Should be same number of particles!)
+        tot2=getNumberParticlesRelion(params['starparticle'])
+
+        if tot != tot2:
+            print 'Error: %s and %s do not have the same number of particles: %i in %s and %i in %s. Exiting.' %(params['stareuler'],params['starparticle'],tot,params['stareuler'],tot2,params['starparticle'])
+            sys.exit()
+
         if params['debug'] is True:
+            print params['rotlim1']
             print params['rotlim2']
+            print params['tiltlim1']
             print params['tiltlim2']
+            print params['psilim1']
             print params['psilim2']
 
         #Remove particles in over-represented views & write into new file {particle}_reweight.star
         reweight_starfile(params['stareuler'],params['starparticle'],params['rotlim1'],params['rotlim2'],params['tiltlim1'],params['tiltlim2'],params['psilim1'],params['psilim2'],params['debug'],tot,params['remove'])
+
+        #Clean up
+        #os.remove('tmpfile122.txt')
+        #os.remove('tmpfile122_222.txt')
