@@ -30,11 +30,11 @@ This script uses numpy and matplotlib to generate 1D/2D histograms for the speci
 
 **1D histogram for a given euler angle**
 
-![alt tag](https://github.com/leschzinerlab/Relion/blob/master/plot_indivEuler_histogram_fromStarFile_1Dhist.png =100x20)
+![alt tag](https://github.com/leschzinerlab/Relion/blob/master/plot_indivEuler_histogram_fromStarFile_1Dhist.png)
 
 **2D histogram for a given euler angle**
 
-![alt tag](https://github.com/leschzinerlab/Relion/blob/master/plot_indivEuler_histogram_fromStarFile_2Dhist.png =100x20)
+![alt tag](https://github.com/leschzinerlab/Relion/blob/master/plot_indivEuler_histogram_fromStarFile_2Dhist.png)
 
 ##Removing over-represented views within Relion STAR files
 
