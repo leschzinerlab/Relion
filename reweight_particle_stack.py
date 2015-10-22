@@ -4,6 +4,7 @@ import optparse
 from sys import *
 import os,sys,re
 import linecache
+import random
 
 #=========================
 def setupParserOptions():
@@ -13,18 +14,20 @@ def setupParserOptions():
                 help="Output Relion star from refinement/classification containing euler angles ")
         parser.add_option("--starparticle",dest="starparticle",type="string",metavar="FILE",
                 help="Relion star file that will be reweighted based upon euler angles.")
-        parser.add_option("--AngleRotLim1",dest="rotlim1",type="int",metavar="INT",default=0,
-                help="Lower limit for AngleRot. (Default=0)")
-        parser.add_option("--AngleRotLim2",dest="rotlim2",type="int",metavar="INT",default=0,
-                help="Upper limit for AngleRot. (Default=Total number of particles)")
+        parser.add_option("--remove",dest="remove",type="int",metavar="INT",
+                help="Number of particles to remove from preferential view")
+        parser.add_option("--AngleRotLim1",dest="rotlim1",type="int",metavar="INT",default=-180,
+                help="Lower limit for AngleRot. (Default=-180)")
+        parser.add_option("--AngleRotLim2",dest="rotlim2",type="int",metavar="INT",default=180,
+                help="Upper limit for AngleRot. (Default=180)")
         parser.add_option("--AngleTiltLim1",dest="tiltlim1",type="int",metavar="INT",default=0,
                 help="Lower limit for AngleTilt. (Default=0)")
-        parser.add_option("--AngleTiltLim2",dest="tiltlim2",type="int",metavar="INT",default=0,
-                help="Upper limit for AngleTilt. (Default=Total number of particles)")
-        parser.add_option("--AnglePsiLim1",dest="psilim1",type="int",metavar="INT",default=0,
-                help="Lower limit for AnglePsi. (Default=0)")
-        parser.add_option("--AnglePsiLim2",dest="psilim2",type="int",metavar="INT",default=0,
-                help="Upper limit for AnglePsi. (Default=Total number of particles)")
+        parser.add_option("--AngleTiltLim2",dest="tiltlim2",type="int",metavar="INT",default=180,
+                help="Upper limit for AngleTilt. (Default=180)")
+        parser.add_option("--AnglePsiLim1",dest="psilim1",type="int",metavar="INT",default=-180,
+                help="Lower limit for AnglePsi. (Default=-180)")
+        parser.add_option("--AnglePsiLim2",dest="psilim2",type="int",metavar="INT",default=180,
+                help="Upper limit for AnglePsi. (Default=180")
         parser.add_option("-d", action="store_true",dest="debug",default=False,
                 help="debug")
         options,args = parser.parse_args()
@@ -52,8 +55,12 @@ def checkConflicts(params):
             print 'Error: File %s does not exist' %(params['starparticle'])
             sys.exit()
 
-        if os.path.exists('%s_reweight.star' %(params['starparticle'][:-4])):
-            print 'Error: File %s already exists. Exiting.' %(params['starparticle'][:-4])
+        if os.path.exists('%s_reweight.star' %(params['starparticle'][:-5])):
+            print 'Error: File %s_reweight.star already exists. Exiting.' %(params['starparticle'][:-5])
+            sys.exit()
+
+        if not params['remove']:
+            print 'Error: No variable specified for number of particles to remove. Exiting.'
             sys.exit()
 
 #===============================
@@ -86,15 +93,25 @@ def getNumberParticlesRelion(star):
     return tot
 
 #==============================
-def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,psilim2,debug):
+def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,psilim2,debug,tot,remove):
 
         #Get column numbers for euler angles
-        colrot=getRelionColumnIndex(stareuler,'rln_AngleRot')
-        coltilt=getRelionColumnIndex(stareuler,'rln_AngleTilt')
-        colpsi=getRelionColumnIndex(stareuler,'rln_AnglePsi')
+        colrot=getRelionColumnIndex(euler,'_rlnAngleRot')
+        coltilt=getRelionColumnIndex(euler,'_rlnAngleTilt')
+        colpsi=getRelionColumnIndex(euler,'_rlnAnglePsi')
+
+        if not colrot:
+            print 'Could not find _rlnAngleRot in header of %s. Exiting' %(euler)
+            sys.exit()
+        if not coltilt:
+            print 'Could not find _rlnAngleTilt in header of %s. Exiting' %(euler)
+            sys.exit()
+        if not colpsi:
+            print 'Could not find _rlnAnglePsi in header of %s. Exiting' %(euler)
+            sys.exit()
 
         #Open output file
-        o1=open('%s_reweight.star' %(params['starparticle'][:-4]),'w')
+        o1=open('%s_reweight.star' %(params['starparticle'][:-5]),'w')
 
         #Read relion header from original file (particle) and then write into new file
         f1=open(particle,'r')
@@ -109,10 +126,59 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         f1.close()
 
         #Find number of particles that need to be removed
+        #Create temporary file
+        tmp='tmpfile122.txt'
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+        out=open(tmp,'w')
+
+        counter=1
+
+        while counter <= tot:
+            line=linecache.getline(euler,counter)
+
+            if len(line) < 50:
+                counter=counter+1
+                continue
+
+            l=line.split()
+
+            rot=float(l[int(colrot)-1])
+            tilt=float(l[int(coltilt)-1])
+            psi=float(l[int(colpsi)-1])
+
+            flag=0
+            if rot<rotlim1 or rot>rotlim2:
+                flag=1
+            if tilt<tiltlim1 or tilt>tiltlim2:
+                flag=1
+            if psi<psilim1 or psi>psilim2:
+                flag=1
+            if flag == 1:
+                out.write('%i\n'%(counter))
+            counter=counter+1
 
         #Randomly select from this particle list a set number to be included
+        if os.path.exists('%s_222.txt' %(tmp[:-4])):
+            os.remove('%s_222.txt' %(tmp[:-4]))
+        out2=open('%s_222.txt' %(tmp[:-4]),'w')
+        counter=1
+        while counter<=remove:
+            line=get_random_line(tmp)
+            out2.write(line)
+            counter=counter+1
 
         #Go through each line, decide if it should/shouldn't be included and write into new file
+
+#============================
+def get_random_line(file_name):
+    total_bytes = os.stat(file_name).st_size
+    random_point = random.randint(0, total_bytes)
+    file = open(file_name)
+    file.seek(random_point)
+    file.readline() # skip this line to clear the partial line
+    return file.readline()
 
 #==============================
 if __name__ == "__main__":
@@ -126,18 +192,10 @@ if __name__ == "__main__":
         #Number of particles
         tot=getNumberParticlesRelion(params['stareuler'])
 
-        #Set max numbers if default was entered for limits
-        if params['rotlim2'] == 0:
-            params['rotlim2'] = tot
-        if params['tiltlim2'] == 0:
-            params['tiltlim2'] = tot
-        if params['psilim2'] == 0:
-            params['psilim2'] = tot
-
         if params['debug'] is True:
             print params['rotlim2']
             print params['tiltlim2']
             print params['psilim2']
 
-        #Remove particles in over-represented views & write into new file {particle}_reweight.star 
-        reweight_starfile(params['stareuler'],params['starparticle'],params['rotlim1'],params['rotlim2'],params['tiltlim1'],params['tiltlim2'],params['psilim1'],params['psilim2'],params['debug'])
+        #Remove particles in over-represented views & write into new file {particle}_reweight.star
+        reweight_starfile(params['stareuler'],params['starparticle'],params['rotlim1'],params['rotlim2'],params['tiltlim1'],params['tiltlim2'],params['psilim1'],params['psilim2'],params['debug'],tot,params['remove'])
