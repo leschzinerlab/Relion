@@ -26,6 +26,16 @@ Options:
 
 This script uses numpy and matplotlib to generate 1D/2D histograms for the specified euler angle (AngleRot, AngleTilt, AnglePsi) that is within the Relion .star file.
 
+###Example output images
+
+**1D histogram for a given euler angle**
+
+![alt tag](https://github.com/leschzinerlab/Relion/blob/master/plot_indivEuler_histogram_fromStarFile_1Dhist.png)
+
+**2D histogram for a given euler angle**
+
+![alt tag](https://github.com/leschzinerlab/Relion/blob/master/plot_indivEuler_histogram_fromStarFile_2Dhist.png)
+
 ##Removing over-represented views within Relion STAR files
 
 After visualizing the above results for euler angle distributions within your data, the following script will randomly remove a specific subset of particles within a specified euler angle range, thus reweighting the euler angle distribution for your data.
