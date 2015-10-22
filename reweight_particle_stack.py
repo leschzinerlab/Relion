@@ -5,6 +5,7 @@ from sys import *
 import os,sys,re
 import linecache
 import random
+import shutil
 
 #=========================
 def setupParserOptions():
@@ -28,6 +29,8 @@ def setupParserOptions():
                 help="Lower limit for AnglePsi. (Default=-180)")
         parser.add_option("--AnglePsiLim2",dest="psilim2",type="int",metavar="INT",default=180,
                 help="Upper limit for AnglePsi. (Default=180")
+        parser.add_option("--savetemp", action="store_true",dest="savetemp",default=False,
+                help="Flag to save list of particles removed from original stack.")
         parser.add_option("-d", action="store_true",dest="debug",default=False,
                 help="debug")
         options,args = parser.parse_args()
@@ -61,6 +64,23 @@ def checkConflicts(params):
 
         if not params['remove']:
             print 'Error: No variable specified for number of particles to remove. Exiting.'
+            sys.exit()
+
+        if params['savetemp'] is True:
+            if os.path.exists('%s_particlesRemoved.star' %(params['stareuler'][:-5])):
+                print 'Error: File %s_particlesRemoved.star already exists. Exiting.' %(params['stareuler'][:-5])
+                sys.exit()
+
+        if params['rotlim2'] < params['rotlim1']:
+            print 'Error: AngleRotLim2 < AngleRotLim1. Exiting'
+            sys.exit()
+
+        if params['tiltlim2'] < params['tiltlim1']:
+            print 'Error: AngleTiltLim2 < AngleTiltLim1. Exiting'
+            sys.exit()
+
+        if params['psilim2'] < params['psilim1']:
+            print 'Error: AnglePsiLim2 < AnglePsiLim1. Exiting'
             sys.exit()
 
 #===============================
@@ -295,6 +315,10 @@ if __name__ == "__main__":
         #Remove particles in over-represented views & write into new file {particle}_reweight.star
         reweight_starfile(params['stareuler'],params['starparticle'],params['rotlim1'],params['rotlim2'],params['tiltlim1'],params['tiltlim2'],params['psilim1'],params['psilim2'],params['debug'],tot,params['remove'])
 
+        #Save temporary list of particles that were excluded
+        if params['savetemp'] is True:
+            shutil.copyfile('tmpfile122_222.txt','%s_particlesRemoved.star' %(params['stareuler'][:-5]))
+
         #Clean up
-        #os.remove('tmpfile122.txt')
-        #os.remove('tmpfile122_222.txt')
+        os.remove('tmpfile122.txt')
+        os.remove('tmpfile122_222.txt')
