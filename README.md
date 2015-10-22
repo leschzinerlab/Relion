@@ -63,6 +63,6 @@ For flexibility, the program can 1) remove particles from the same input file, o
 For example, if I have an over-represented euler angle range of 50 - 80 degrees from the AngleRot angle and I know that I want to remove 10,000 particles from this range in order to restore it to the baseline distribution:
 
 ```
-$ Relion/reweight_particle_stack.py  --stareuler=relion_data.star --starparticle=relion_data.star --AngleTiltLim1=50 --AngleTiltLim2=80 --savetemp
+$ Relion/reweight_particle_stack.py  --stareuler=relion_data.star --starparticle=relion_data.star --remove=10000 --AngleTiltLim1=50 --AngleTiltLim2=80 --savetemp
 ```
 * Where, *relion_data.star* is a data file from relion that will have certain particles removed. And, the particles removed will be saved, and stored in a new file named *relion_data_particlesRemoved.star*.
