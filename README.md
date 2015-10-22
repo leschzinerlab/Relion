@@ -1,6 +1,3 @@
-* auto-gen TOC:
-{:toc}
-
 #Relion code repository
 
 - [Plotting euler angle distributions for 3D reconstructions] (https://github.com/leschzinerlab/Relion#plotting-euler-angle-distributions-for-3d-reconstructions)
