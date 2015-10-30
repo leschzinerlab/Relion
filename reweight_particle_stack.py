@@ -6,6 +6,7 @@ import os,sys,re
 import linecache
 import random
 import shutil
+import numpy as np
 
 #=========================
 def setupParserOptions():
@@ -18,19 +19,19 @@ def setupParserOptions():
         parser.add_option("--remove",dest="remove",type="int",metavar="INT",
                 help="Number of particles to remove from preferential view, specified WITHIN the limits below")
         parser.add_option("--AngleRotLim1",dest="rotlim1",type="int",metavar="INT",default=-180,
-                help="Lower limit for AngleRot. (Default=-180)")
+                help="Lower limit for AngleRot.")
         parser.add_option("--AngleRotLim2",dest="rotlim2",type="int",metavar="INT",default=180,
-                help="Upper limit for AngleRot. (Default=180)")
+                help="Upper limit for AngleRot.")
         parser.add_option("--AngleTiltLim1",dest="tiltlim1",type="int",metavar="INT",default=0,
-                help="Lower limit for AngleTilt. (Default=0)")
+                help="Lower limit for AngleTilt.")
         parser.add_option("--AngleTiltLim2",dest="tiltlim2",type="int",metavar="INT",default=180,
-                help="Upper limit for AngleTilt. (Default=180)")
+                help="Upper limit for AngleTilt.")
         parser.add_option("--AnglePsiLim1",dest="psilim1",type="int",metavar="INT",default=-180,
-                help="Lower limit for AnglePsi. (Default=-180)")
+                help="Lower limit for AnglePsi.")
         parser.add_option("--AnglePsiLim2",dest="psilim2",type="int",metavar="INT",default=180,
-                help="Upper limit for AnglePsi. (Default=180")
-        parser.add_option("--savetemp", action="store_true",dest="savetemp",default=False,
-                help="Flag to save list of particles removed from original stack.")
+                help="Upper limit for AnglePsi.")
+        parser.add_option("--saveremoved", action="store_true",dest="savetemp",default=False,
+                help="Flag to save list of particle numbers removed from original list.")
         parser.add_option("-d", action="store_true",dest="debug",default=False,
                 help="debug")
         options,args = parser.parse_args()
@@ -202,16 +203,8 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
 
         out.close()
 
-        #Randomly select from this list of particles a set number to be removed
-        if os.path.exists('%s_222.txt' %(tmp[:-4])):
-            os.remove('%s_222.txt' %(tmp[:-4]))
-        out2=open('%s_222.txt' %(tmp[:-4]),'w')
-        counter=1
-        while counter<=remove:
-            line=get_random_line(tmp)
-            out2.write(line)
-            counter=counter+1
-        out2.close()
+        #Create numpy list of random numbers withOUT replacement to be removed
+        toberemoved=np.random.choice(tot,remove,replace=False)
 
         #Write header lines from edited file into new file header
         particleopen=open(particle,'r')
@@ -226,6 +219,8 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
 
         #Get number of lines in header for edited file
         header_particle=getNumberofLinesRelionHeader(particle)
+        if debug is True:
+            outtemp=open('tmpout_flaggedtoberemoved.txt','w')
 
         #Go through each line, decide if it should/shouldn't be included and write into new file
         euler_open=open(euler,'r')
@@ -242,7 +237,12 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
                 print 'Euler line: %s' %(line)
 
             #Check if this particle is to be removed
-            remove_flag=checkInList('tmpfile122_222.txt',counter)
+            #remove_flag=checkInList('tmpfile122_222.txt',counter)
+
+            if counter-1 in toberemoved:
+                remove_flag=1
+            if not counter-1 in toberemoved:
+                remove_flag=0
 
             #Determine corresponding line number in edited file for this particle
             particle_num=counter+header_particle
@@ -259,7 +259,11 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
                 if debug is True:
                     'Writing particle %i to new file' %(counter)
 
+                    if debug is True:
+                        outtemp.write('%s\n' %(str(remove_flag)))
+
             counter=counter+1
+        return toberemoved
 #============================
 def get_random_line(file_name):
     total_bytes = os.stat(file_name).st_size
@@ -313,12 +317,11 @@ if __name__ == "__main__":
             print params['psilim2']
 
         #Remove particles in over-represented views & write into new file {particle}_reweight.star
-        reweight_starfile(params['stareuler'],params['starparticle'],params['rotlim1'],params['rotlim2'],params['tiltlim1'],params['tiltlim2'],params['psilim1'],params['psilim2'],params['debug'],tot,params['remove'])
+        npout=reweight_starfile(params['stareuler'],params['starparticle'],params['rotlim1'],params['rotlim2'],params['tiltlim1'],params['tiltlim2'],params['psilim1'],params['psilim2'],params['debug'],tot,params['remove'])
 
         #Save temporary list of particles that were excluded
         if params['savetemp'] is True:
-            shutil.copyfile('tmpfile122_222.txt','%s_particlesRemoved.star' %(params['stareuler'][:-5]))
+            np.savetxt('%s_particlesRemoved.txt' %(params['stareuler'][:-5]),npout,fmt='%i')
 
         #Clean up
         os.remove('tmpfile122.txt')
-        os.remove('tmpfile122_222.txt')
