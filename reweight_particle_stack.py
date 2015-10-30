@@ -257,13 +257,18 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         if debug is True:
             outtemp=open('tmpout_flaggedtoberemoved.txt','w')
             print 'Number of lines in header: %i' %(header_particle)
+
         #Go through each line, decide if it should/shouldn't be included and write into new file
         euler_open=open(euler,'r')
         counter=1
 
+        #Particlesremoved
+        outtmp=open('%s_linesRemoved.txt'%(tmp[:-4]),'w')
+
         for line in euler_open:
 
             if len(line) < 50:
+                counter=counter+1
                 continue
 
             #Debug print
@@ -275,14 +280,14 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             #remove_flag=checkInList('tmpfile122_222.txt',counter)
             remove_flag=0
 
-            if counter in badparticlelist:
+            if (counter-header_particle) in badparticlelist:
                 remove_flag=1
 
-            if not counter in badparticlelist:
+            if not (counter-header_particle) in badparticlelist:
                 remove_flag=0
 
             #Determine corresponding line number in edited file for this particle
-            particle_num=counter+header_particle
+            particle_num=counter
 
             #Get line from file
             particle_line=linecache.getline(particle,particle_num)
@@ -296,8 +301,8 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
                 #if debug is True:
                     #'Writing particle %i to new file' %(counter)
 
-                    #if debug is True:
-                    #    outtemp.write('%s\n' %(str(remove_flag)))
+                if debug is True:
+                    outtemp.write('%s\n' %(str(remove_flag)))
 
             counter=counter+1
         return badparticlelist
@@ -364,3 +369,4 @@ if __name__ == "__main__":
         if params['debug'] is False:
             os.remove('tmpfile122.txt')
             os.remove('tmpfile122_sel.txt')
+            os.remove('tmpfile122_linesRemoved.txt')
