@@ -152,11 +152,12 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         if os.path.exists(tmp):
             os.remove(tmp)
 
+
 #####TO DO
-#create random list with replacement containing the number of entries in tmpfile
+#create random list without replacement containing the number of entries in tmpfile
 #then, read each line of tmpfile, asking if it is in teh random array
 #If in random array, write to new text file
-#Now, loop over all particles, and check if given particle is in the 'bad list', if so, do not write to output file . 
+#Now, loop over all particles, and check if given particle is in the 'bad list', if so, do not write to output file .
 
         out=open(tmp,'w')
 
@@ -209,8 +210,36 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
 
         out.close()
 
+        #Get number of lines in tmpfile
+        numLinesTemptFile=len(open(tmp,'r').readlines())
+
+        #Throw error if number to be removed is greater than number in group
+        if remove>numLinesTemptFile:
+            print 'Error: Number of particles to removed from euler angle range is greater than the number of particles in given group. Check tmpfile122.txt for number of particles that are in euler angle group.Exiting'
+            sys.exit()
+
         #Create numpy list of random numbers withOUT replacement to be removed
-        toberemoved=np.random.choice(tot,remove,replace=False)
+        toberemoved=np.random.choice(numLinesTemptFile,remove,replace=False)
+
+        #Create new text file from which actual bad particle numbers will be stored
+        tmp2='tmpfile122_sel.txt'
+        if os.path.exists(tmp2):
+            os.remove(tmp2)
+        tmpread=open(tmp,'r')
+        tmp2out=open(tmp2,'w')
+        counter=1
+
+        for line in tmpread:
+
+            if counter in toberemoved:
+                tmp2out.write(line)
+
+            counter=counter+1
+
+        tmp2out.close()
+        tmpread.close()
+
+        badparticlelist=np.loadtxt(tmp2)
 
         #Write header lines from edited file into new file header
         particleopen=open(particle,'r')
@@ -224,10 +253,10 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             counter=counter+1
 
         #Get number of lines in header for edited file
-        header_particle=getNumberofLinesRelionHeader(particle)
+        header_particle=getNumberofLinesRelionHeader(particle)-1
         if debug is True:
             outtemp=open('tmpout_flaggedtoberemoved.txt','w')
-
+            print 'Number of lines in header: %i' %(header_particle)
         #Go through each line, decide if it should/shouldn't be included and write into new file
         euler_open=open(euler,'r')
         counter=1
@@ -238,16 +267,18 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
                 continue
 
             #Debug print
-            if debug is True:
-                print 'Working on particle %i in euler file' %(counter)
-                print 'Euler line: %s' %(line)
+            #if debug is True:
+                #print 'Working on particle %i in euler file' %(counter)
+                #print 'Euler line: %s' %(line)
 
             #Check if this particle is to be removed
             #remove_flag=checkInList('tmpfile122_222.txt',counter)
+            remove_flag=0
 
-            if counter-1 in toberemoved:
+            if counter in badparticlelist:
                 remove_flag=1
-            if not counter-1 in toberemoved:
+
+            if not counter in badparticlelist:
                 remove_flag=0
 
             #Determine corresponding line number in edited file for this particle
@@ -256,20 +287,20 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             #Get line from file
             particle_line=linecache.getline(particle,particle_num)
 
-            if debug is True:
-                print 'Particle %i is on line %i in %s' %(counter,particle_num,particle)
-                print 'Particle line: %s' %(particle_line)
+            #if debug is True:
+                #print 'Particle %i is on line %i in %s' %(counter,particle_num,particle)
+                #print 'Particle line: %s' %(particle_line)
 
             if remove_flag == 0:
                 particlewrite.write(particle_line)
-                if debug is True:
-                    'Writing particle %i to new file' %(counter)
+                #if debug is True:
+                    #'Writing particle %i to new file' %(counter)
 
-                    if debug is True:
-                        outtemp.write('%s\n' %(str(remove_flag)))
+                    #if debug is True:
+                    #    outtemp.write('%s\n' %(str(remove_flag)))
 
             counter=counter+1
-        return toberemoved
+        return badparticlelist
 #============================
 def get_random_line(file_name):
     total_bytes = os.stat(file_name).st_size
@@ -330,4 +361,6 @@ if __name__ == "__main__":
             np.savetxt('%s_particlesRemoved.txt' %(params['stareuler'][:-5]),npout,fmt='%i')
 
         #Clean up
-        os.remove('tmpfile122.txt')
+        if params['debug'] is False:
+            os.remove('tmpfile122.txt')
+            os.remove('tmpfile122_sel.txt')
