@@ -152,6 +152,12 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         if os.path.exists(tmp):
             os.remove(tmp)
 
+#####TO DO
+#create random list with replacement containing the number of entries in tmpfile
+#then, read each line of tmpfile, asking if it is in teh random array
+#If in random array, write to new text file
+#Now, loop over all particles, and check if given particle is in the 'bad list', if so, do not write to output file . 
+
         out=open(tmp,'w')
 
         counter=1
