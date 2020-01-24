@@ -1,10 +1,7 @@
-#Relion code repository
+# RELION code repository
 
-**Working with STAR files**
-- [Plotting euler angle distributions for 3D reconstructions] (https://github.com/leschzinerlab/Relion#plotting-euler-angle-distributions-for-3d-reconstructions)
-- [Removing over-represented views within Relion STAR files] (https://github.com/leschzinerlab/Relion#removing-over-represented-views-within-relion-star-files)
 
-##Plotting euler angle distributions for 3D reconstructions
+## Plotting euler angle distributions for 3D reconstructions
 
 Given an output *.star* file from Relion, you can visualize the euler angles by opening the .bild file with UCSF Chimera.
 
@@ -27,7 +24,7 @@ Options:
 
 This script uses numpy and matplotlib to generate 1D/2D histograms for the specified euler angle (AngleRot, AngleTilt, AnglePsi) that is within the Relion .star file.
 
-###Example output images
+### Example output images
 
 **1D histogram for a given euler angle**
 
@@ -37,7 +34,7 @@ This script uses numpy and matplotlib to generate 1D/2D histograms for the speci
 
 ![alt tag](https://github.com/leschzinerlab/Relion/blob/master/plot_indivEuler_histogram_fromStarFile_2Dhist.png)
 
-##Removing over-represented views within Relion STAR files
+## Removing over-represented views within Relion STAR files
 
 After visualizing the above results for euler angle distributions within your data, the following script will randomly remove a specific subset of particles within a specified euler angle range, thus reweighting the euler angle distribution for your data.
 
@@ -63,7 +60,7 @@ Options:
                        original list.
   -d                   debug
   ```
-###Usage
+### Usage
 By default, if no euler angle limits are specified, this program will not remove any particles from the .star file.
 
 In order to remove particles from within a euler angle range, you must specify a range WITHIN euler angles limits that will be removed. For instance, if you wanted to remove particles within the AngleRot range 50 to 90 degrees, you would have these input options:
@@ -73,7 +70,7 @@ In order to remove particles from within a euler angle range, you must specify a
 
 For flexibility, the program can 1) remove particles from the same input file, or 2) remove particles from a different file. And, the list of particles that were excluded can be saved by specifying the *--saveremoved* option.
 
-###Example
+### Example
 For example, if I have an over-represented euler angle range of 50 - 90 degrees from the AngleRot angle and I know that I want to remove 10,000 particles from this range in order to restore it to the baseline distribution:
 
 ```
