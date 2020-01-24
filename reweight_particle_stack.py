@@ -203,7 +203,7 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
 
             if psilim1 >= -180:
                 if psilim2 <= 180:
-                    if psi>psilim1 and ps<psilim2:
+                    if psi>psilim1 and psi<psilim2:
                         flag=1
                         if debug is True:
                             print 'flagged b/c of psi'
