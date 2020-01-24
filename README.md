@@ -1,8 +1,5 @@
-# Relion code repository
+# RELION code repository
 
-**Working with STAR files**
-- [Plotting euler angle distributions for 3D reconstructions] (https://github.com/leschzinerlab/Relion#plotting-euler-angle-distributions-for-3d-reconstructions)
-- [Removing over-represented views within Relion STAR files] (https://github.com/leschzinerlab/Relion#removing-over-represented-views-within-relion-star-files)
 
 ## Plotting euler angle distributions for 3D reconstructions
 
