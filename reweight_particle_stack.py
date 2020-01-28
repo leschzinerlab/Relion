@@ -18,17 +18,17 @@ def setupParserOptions():
                 help="Relion star file that will be reweighted based upon euler angles.")
         parser.add_option("--remove",dest="remove",type="int",metavar="INT",
                 help="Number of particles to remove from preferential view, specified WITHIN the limits below")
-        parser.add_option("--AngleRotLim1",dest="rotlim1",type="int",metavar="INT",default=-180,
+        parser.add_option("--AngleRotLim1",dest="rotlim1",type="int",metavar="INT",default=-181,
                 help="Lower limit for AngleRot.")
-        parser.add_option("--AngleRotLim2",dest="rotlim2",type="int",metavar="INT",default=180,
+        parser.add_option("--AngleRotLim2",dest="rotlim2",type="int",metavar="INT",default=181,
                 help="Upper limit for AngleRot.")
-        parser.add_option("--AngleTiltLim1",dest="tiltlim1",type="int",metavar="INT",default=0,
+        parser.add_option("--AngleTiltLim1",dest="tiltlim1",type="int",metavar="INT",default=-1,
                 help="Lower limit for AngleTilt.")
-        parser.add_option("--AngleTiltLim2",dest="tiltlim2",type="int",metavar="INT",default=180,
+        parser.add_option("--AngleTiltLim2",dest="tiltlim2",type="int",metavar="INT",default=181,
                 help="Upper limit for AngleTilt.")
-        parser.add_option("--AnglePsiLim1",dest="psilim1",type="int",metavar="INT",default=-180,
+        parser.add_option("--AnglePsiLim1",dest="psilim1",type="int",metavar="INT",default=-181,
                 help="Lower limit for AnglePsi.")
-        parser.add_option("--AnglePsiLim2",dest="psilim2",type="int",metavar="INT",default=180,
+        parser.add_option("--AnglePsiLim2",dest="psilim2",type="int",metavar="INT",default=181,
                 help="Upper limit for AnglePsi.")
         parser.add_option("--saveremoved", action="store_true",dest="savetemp",default=False,
                 help="Flag to save list of particle numbers removed from original list.")
@@ -103,15 +103,12 @@ def getRelionColumnIndex(star,rlnvariable):
 
 #==============================
 def getNumberofLinesRelionHeader(star):
-
     f1=open(star,'r')
     tot=0
-
     for line in f1:
         if len(line) < 50:
             tot=tot+1
     f1.close()
-
     return tot
 
 #==============================
@@ -162,14 +159,17 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         out=open(tmp,'w')
 
         counter=1
-        particlecounter=1
-
-        while counter <= tot:
+        badcounter=1
+	particlecounter=1
+	if debug is True: 
+		print "total num particles=%i" %(tot)
+	headernum=getNumberofLinesRelionHeader(particle)
+        while counter <= tot+headernum:
             line=linecache.getline(euler,counter)
 
-            if len(line) < 50:
+            if len(line) < 40:
                 counter=counter+1
-                continue
+		continue
 
             l=line.split()
 
@@ -178,21 +178,24 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             psi=float(l[int(colpsi)-1])
 
             flag=0
-            if debug is True:
-		print line
-                print "rot=%s"%(rot)
-                print tilt
-                print psi
-		print 'rotlim1=%f' %(rotlim1)
-		print 'rotlim2=%f' %(rotlim2)
+            #if debug is True:
+		#print line
+                #print "rot=%s"%(rot)
+                #print colrot 
+		#print tilt
+                #print psi
+		#print 'rotlim1=%f' %(rotlim1)
+		#print 'rotlim2=%f' %(rotlim2)
+		#print tiltlim1
+		#print tiltlim2
+		#print psilim1
+		#print psilim2
             if rotlim1 >= -180:
                 if rotlim2 <= 180:
-                    if debug is True: 
-			print '-------->here'
 		    if rot>rotlim1 and rot<rotlim2:
                         flag=1
-                        if debug is True:
-                            print 'flagged b/c of rot'
+                        #if debug is True:
+                        #    print 'flagged b/c of rot'
 
             if tiltlim1 >=0:
                 if tiltlim2<=180:
@@ -208,15 +211,19 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
                         if debug is True:
                             print 'flagged b/c of psi'
             if flag == 1:
-                out.write('%i\n'%(particlecounter))
+		badcounter=badcounter+1
+		out.write('%i\n'%(particlecounter))
             counter=counter+1
             particlecounter=particlecounter+1
-
+	if debug is True:
+		print badcounter	
+		print particlecounter
         out.close()
 
         #Get number of lines in tmpfile
         numLinesTemptFile=len(open(tmp,'r').readlines())
-
+	if debug is True:
+		print 'numLines=%i' %(numLinesTemptFile)
         #Throw error if number to be removed is greater than number in group
         if remove>numLinesTemptFile:
             print 'Error: Number of particles to removed from euler angle range is greater than the number of particles in given group. Check tmpfile122.txt for number of particles that are in euler angle group.Exiting'
@@ -234,10 +241,8 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         counter=1
 
         for line in tmpread:
-
             if counter in toberemoved:
                 tmp2out.write(line)
-
             counter=counter+1
 
         tmp2out.close()
@@ -249,7 +254,6 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
         particleopen=open(particle,'r')
         particlewrite=open('%s_reweight.star' %(particle[:-5]),'w')
         counter=1
-        counter=1
         for line in particleopen:
             if counter<80:
                 if len(line)<50:
@@ -257,10 +261,10 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             counter=counter+1
 
         #Get number of lines in header for edited file
-        header_particle=getNumberofLinesRelionHeader(particle)-1
+        header_particle=getNumberofLinesRelionHeader(particle)
         if debug is True:
             outtemp=open('tmpout_flaggedtoberemoved.txt','w')
-            print 'Number of lines in header: %i' %(header_particle)
+            outtemp.write('Number of lines in header: %i\n' %(header_particle))
 
         #Go through each line, decide if it should/shouldn't be included and write into new file
         euler_open=open(euler,'r')
@@ -283,7 +287,10 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             #Check if this particle is to be removed
             #remove_flag=checkInList('tmpfile122_222.txt',counter)
             remove_flag=0
-
+	    if debug is True:
+		print line
+		print counter
+		print counter-header_particle
             if (counter-header_particle) in badparticlelist:
                 remove_flag=1
 
@@ -297,13 +304,13 @@ def reweight_starfile(euler,particle,rotlim1,rotlim2,tiltlim1,tiltlim2,psilim1,p
             particle_line=linecache.getline(particle,particle_num)
 
             #if debug is True:
-                #print 'Particle %i is on line %i in %s' %(counter,particle_num,particle)
-                #print 'Particle line: %s' %(particle_line)
+            #    print 'Particle %i is on line %i in %s' %(counter,particle_num,particle)
+            #    print 'Particle line: %s' %(particle_line)
 
             if remove_flag == 0:
                 particlewrite.write(particle_line)
                 #if debug is True:
-                    #'Writing particle %i to new file' %(counter)
+                #    print 'Writing particle %i to new file' %(counter)
 
                 if debug is True:
                     outtemp.write('%s\n' %(str(remove_flag)))
